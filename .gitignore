@@ -1,0 +1,31 @@
+# Local agent and editor configuration
+.agents/
+.claude/
+.codex/
+.vs/
+.vscode/
+.idea/
+
+# Python build and cache artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Downloaded model artifacts and experiment outputs
+Parallax/models/
+Parallax/checkpoints/
+Parallax/outputs/
+Parallax/logs/
+Parallax/lightning_logs/
+Parallax/wandb/
+
+# Local medical-image working data and generated previews
+Parallax/X-ray data/
+Parallax/X-ray data_sample/
+
+# Local environment and secrets
+.env
+.venv/
+venv/
+env/
