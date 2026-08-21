@@ -29,3 +29,11 @@ Parallax/X-ray data_sample/
 .venv/
 venv/
 env/
+
+# Local-only project documentation and utilities
+/openspec/
+/reports/
+/research/
+/scripts/
+/AGENTS.md
+/README.md
