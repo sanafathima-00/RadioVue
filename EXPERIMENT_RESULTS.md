@@ -31,6 +31,18 @@ The outputs are not frontal-like. Left-right symmetry is 0.12–0.50, vs 0.86–
 - DVG is highly sensitive to lateral orientation, so the default azimuth is now **−90°** (`PipelineConfig.lateral_azimuth_deg`). With it, the CT from a generated lateral moderately agrees with the CT from the real lateral, and also looks like a plausible thorax.
 - **Accuracy against a ground-truth CT is unmeasured.** That needs the paired dataset.
 
+### G5. Patient-specificity investigation (Parallax conditioning): EXECUTED, n = 3
+
+Raw numbers: `validation_data/results/colab_t4_2026-10-30/patient_specificity_PS1.json`. Two seeds per arm. Specificity is measured against each subject's real lateral; margin = own-patient score minus the mean over the other patients.
+
+| Conditioning variant | Outcome |
+|---|---|
+| Guidance 1.5 / 6 / 9 (default 3) | No consistent gain. Guidance 9 raised diversity, but edge margins went negative (−0.08 to −0.11). |
+| Aspect-preserving pad (vs stock stretch) | Worse on every measure. |
+| **DRR-domain bridging** (pose-0 re-rendering of the PA, then the lateral) | Best metrics (edge margin +0.08 / +0.11; intensity top-1 up to 2/3). Subject A's downstream CT agreed better with the real-lateral CT (NCC 0.65 vs 0.55, MAE 0.096 vs 0.117, both seeds). **But it badly corrupted subject B.** It ships as an **experimental option, off by default** (`bridge_to_drr_domain`). |
+
+**Finding used in production: pose-0 self-reconstruction fidelity.** Parallax re-rendering its own input at pose 0 separates the hallucinating subject B (edge NCC **0.13**, seed spread 0.050) from A and C (0.71 / 0.75, seed spread 0.018 / 0.028). It is now a **gating** QC check (threshold 0.4, provisional, n = 3). Inputs outside the generator's domain are therefore refused before Volumea rather than turned into a hallucinated CT. **Patient specificity of the generated lateral itself is still not demonstrated.**
+
 ### G4. MedGemma: NOT EXECUTED
 
 `HF_TOKEN` did not yet exist in Colab Secrets (`SecretNotFoundError`). MedGemma is therefore optional in the app.

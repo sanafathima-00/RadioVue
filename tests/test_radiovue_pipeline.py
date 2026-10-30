@@ -73,6 +73,8 @@ class FakeSynthesizer:
         self.lateral01, self.noise = lateral01, noise
 
     def generate(self, image, azimuth, seeds, steps, guidance):
+        if azimuth == 0 and not getattr(self, "out_of_domain", False):  # faithful pose-0 re-rendering of the input
+            return [image.convert("L").resize(self.lateral01.shape[::-1]) for _ in seeds]
         out = []
         for s in seeds:
             arr = self.lateral01 + np.random.default_rng(s).normal(0, self.noise, self.lateral01.shape)
@@ -442,3 +444,25 @@ def test_released_lazy_components_reload_on_next_run(tmp_path, frontal_lateral_p
     first = run_pipeline(src, cfg, comps, declared_view="PA")
     second = run_pipeline(src, cfg, comps, declared_view="PA")
     assert first["status"] == second["status"] == "completed" and len(builds) == 2
+
+
+def test_out_of_domain_input_is_refused_before_volumea(tmp_path, frontal_lateral_pair):
+    frontal, lateral = frontal_lateral_pair
+    src = save_png(frontal, tmp_path / "input.png")
+    synth = FakeSynthesizer(lateral, 0.01)
+    synth.out_of_domain = True  # cannot re-render its input at pose 0, like the hallucinating CC0 subject
+    recon = FakeReconstructor()
+    out = run_pipeline(src, _cfg(tmp_path), Components(view_classifier=FakeClassifier(), synthesizer=synth, reconstructor=recon),
+                       declared_view="PA")
+    assert out["status"] == "stopped_qc_refusal" and not recon.calls
+    assert "self_reconstruction" in out["validation_results"]["synthesis_qc"]["failed_checks"]
+    assert any("outside the view-synthesis model's domain" in w for w in out["warnings"])
+
+
+def test_self_reconstruction_fidelity_separates_faithful_and_corrupted(frontal_lateral_pair):
+    from radiovue_pipeline.consistency import self_reconstruction_fidelity
+
+    frontal, _ = frontal_lateral_pair
+    noisy = np.clip(np.random.default_rng(0).normal(0.5, 0.3, frontal.shape), 0, 1)
+    assert self_reconstruction_fidelity(frontal, frontal)["edge_ncc"] > 0.99
+    assert self_reconstruction_fidelity(frontal, noisy)["edge_ncc"] < 0.4

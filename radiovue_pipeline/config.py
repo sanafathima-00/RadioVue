@@ -58,6 +58,9 @@ class PipelineConfig:
     # UNCALIBRATED: dihedral transform taking Parallax's raw output into display
     # orientation (head up, anterior on the viewer's left).  Fitted by notebook 03.
     parallax_output_transform: str = "identity"
+    # EXPERIMENTAL, off: condition the lateral on Parallax's pose-0 re-rendering of the input (DRR style).
+    # Improved specificity metrics on two CC0 subjects but corrupted the third (EXPERIMENT_RESULTS.md PS1).
+    bridge_to_drr_domain: bool = False
 
     # --- Volumea (DVG) adapter -----------------------------------------
     # "repo_center_crop" reproduces Volumea/dataset/lidc.py SingleDataGenerator_real;
@@ -80,7 +83,11 @@ class PipelineConfig:
     qc_min_dynamic_range: float = 0.15
     # row_profile is advisory until calibrated on paired DRR data (see
     # research/failed-experiments/2026-10-30-row-profile-qc-real-radiographs.md).
-    qc_gating_checks: list[str] = field(default_factory=lambda: ["sample_agreement", "dynamic_range", "not_a_copy"])
+    qc_gating_checks: list[str] = field(
+        default_factory=lambda: ["sample_agreement", "dynamic_range", "not_a_copy", "self_reconstruction"]
+    )
+    # Provisional: separated the hallucinating CC0 subject (0.13) from two others (0.71, 0.75); n=3.
+    qc_min_self_reconstruction_edge_ncc: float = 0.4
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

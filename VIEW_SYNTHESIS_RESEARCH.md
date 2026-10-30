@@ -133,3 +133,34 @@ What it does **not** solve, recorded explicitly:
 - QC thresholds are provisional. Row-profile consistency is advisory.
 - The lateral azimuth sign, the generator output orientation, and the DVG slot transforms are **uncalibrated** until notebook 03 runs.
 - DVG reconstructs 128³ in normalised units (not HU). Its frontal pose is a DRR geometry, neither a clinical PA nor an AP.
+
+---
+
+## 9. Patient-specificity investigation (2026-10-30, after the first GPU runs)
+
+**Problem.** On three CC0 subjects with real same-patient laterals, Parallax laterals were no more similar to their own patient's real lateral than to other patients' laterals (top-1 = chance). Generated laterals also resembled each other, and one subject showed hallucinated structures. Visual plausibility is not evidence of patient specificity.
+
+**Mechanism (hypothesis supported by G5).** Parallax was trained only on LIDC DRRs. A real, display-processed radiograph is out of domain. The model then leans on its population prior, so outputs look plausible but generic. Supporting evidence:
+
+- Re-rendering the input in DRR style first improved every specificity metric on two of three subjects.
+- The hallucinating subject is exactly the one the model could not re-render at pose 0.
+
+### What was tested (EXPERIMENT_RESULTS.md G5)
+
+| Lever | Result |
+|---|---|
+| Guidance scale | No consistent improvement |
+| Aspect-preserving padding | Worse |
+| DRR-domain bridging (pose-0 re-render) | Better metrics on A/C (downstream CT NCC 0.55 → 0.65 on A); corrupts B. Kept as an experimental option, off by default |
+| Pose-0 self-reconstruction as an OOD gate | Cleanly flags B (edge NCC 0.13 vs 0.71/0.75). **Adopted as a gating QC check** |
+
+### Candidate improvements not yet testable, with evidence-based assessment
+
+| Option | Can it add patient specificity? | Requirements | Status |
+|---|---|---|---|
+| **MedGemma as QC** (findings on PA vs generated lateral; flag new findings, e.g. B's bright structures, or missing findings, e.g. C's opacities) | It cannot add specificity, but it can *reject* hallucinations that segmentation and pixel metrics miss | `HF_TOKEN` + HAI-DEF acceptance; ~10 GB VRAM in a subprocess | Ready to test once the token exists |
+| **MedGemma as conditioning** | Unlikely. Text is a lossy bottleneck, and no model conditions on it | New conditioning pathway + paired training data | Not recommended |
+| **MedSigLIP embedding in place of / alongside CLIP** | Possible. Medical features may survive the real→DRR gap better than CLIP | Fine-tune `cc_projection` + DiT cross-attention (LoRA) on SV-DRR's published LIDC DRR set (~1,000 CTs × views). Estimate: A100-class GPU, tens of GPU-hours. Not feasible on a free T4 | Design only. Evaluate MedSigLIP's domain-gap robustness first (notebook 02, needs token) |
+| **Domain-adaptive fine-tuning of Parallax** (train on DRRs restyled to look like real radiographs, or unpaired real-image adaptation as in XraySyn's 2DRN) | Directly targets the identified cause | CT→DRR data + real radiographs; A100-class training | Highest-value training experiment |
+| **Explicit 3D-prior route** (single-view CT model → reproject the lateral; e.g. X2CT-GAN single-view, XraySyn 3DPN) | Specificity comes from a 3D estimate. Prior work reports blur, and ±9–18° only for XraySyn | X2CT weights are bundled with LIDC data (Dropbox), PyTorch 0.4, licence ambiguity (GPLv3 vs LGPL) | Not pursued now. Same DRR-domain gap |
+| **Validation that can actually measure specificity** | Necessary for every option above | ≥ 20 subjects with real PA + lateral (+ CT for downstream metrics) | Waiting for your paired dataset |

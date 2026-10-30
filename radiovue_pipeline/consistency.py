@@ -91,7 +91,28 @@ def sample_statistics(samples: list[np.ndarray]) -> dict[str, Any]:
     }
 
 
-DEFAULT_GATING_CHECKS = ("sample_agreement", "dynamic_range", "not_a_copy")
+DEFAULT_GATING_CHECKS = ("sample_agreement", "dynamic_range", "not_a_copy", "self_reconstruction")
+
+
+def _edge_map(image01: np.ndarray, size: int = 128) -> np.ndarray:
+    from PIL import Image
+    from scipy.ndimage import gaussian_filter, sobel
+
+    a = np.asarray(Image.fromarray(np.asarray(image01, np.float32)).resize((size, size), Image.BILINEAR), np.float64)
+    a = gaussian_filter(a, 1.5)
+    return np.hypot(sobel(a, 0), sobel(a, 1))
+
+
+def self_reconstruction_fidelity(input01: np.ndarray, reconstruction01: np.ndarray) -> dict[str, float]:
+    """How faithfully the generator re-renders its own input at pose 0 (no rotation).
+
+    A model that cannot reproduce the input is operating outside its training
+    domain.  Its novel views of that input are then unreliable.  On a Colab T4
+    (2026-10-30, three CC0 subjects) the subject whose generated lateral showed
+    hallucinated structures had edge NCC 0.13; the other two had 0.71 and 0.75.
+    """
+    return {"ncc": ncc(np.asarray(input01, np.float64), np.asarray(reconstruction01, np.float64)),
+            "edge_ncc": ncc(_edge_map(input01), _edge_map(reconstruction01))}
 
 
 def evaluate_synthetic_view(
@@ -103,6 +124,8 @@ def evaluate_synthetic_view(
     max_input_copy_ncc: float = 0.9,
     expect_rotation: bool = True,
     gating_checks: tuple[str, ...] = DEFAULT_GATING_CHECKS,
+    self_reconstruction: dict[str, float] | None = None,
+    min_self_reconstruction_edge_ncc: float = 0.4,
 ) -> dict[str, Any]:
     """Run all QC checks.  ``passed`` is True only if every *gating* check passes.
 
@@ -126,6 +149,9 @@ def evaluate_synthetic_view(
     if expect_rotation and np.shape(input01) == np.shape(representative):
         copy_score = ncc(input01, representative)
         checks["not_a_copy"] = {"input_output_ncc": copy_score, "threshold": max_input_copy_ncc, "passed": copy_score < max_input_copy_ncc}
+    if self_reconstruction is not None:
+        checks["self_reconstruction"] = {**self_reconstruction, "threshold_edge_ncc": min_self_reconstruction_edge_ncc,
+                                         "passed": self_reconstruction["edge_ncc"] >= min_self_reconstruction_edge_ncc}
 
     for name, check in checks.items():
         check["gating"] = name in gating_checks

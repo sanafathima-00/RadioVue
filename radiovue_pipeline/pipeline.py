@@ -19,7 +19,7 @@ from PIL import Image
 
 from .anatomy_extraction import GenerationRecord, run_extraction
 from .config import PipelineConfig
-from .consistency import evaluate_synthetic_view
+from .consistency import evaluate_synthetic_view, self_reconstruction_fidelity
 from .io_utils import from_float01, load_xray, to_float01
 from .provenance import ORIGIN_ORIGINAL, ImageRecord, preserve_original, save_synthetic, sha256_file, stamp_synthetic
 from .view_classification import fuse_view_evidence
@@ -290,8 +290,14 @@ def run_pipeline(
         return finish("stopped_synthesizer_unavailable")
 
     try:
+        # Pose-0 self-reconstruction: an out-of-domain-input check that needs no ground truth.
+        reconstruction = synthesizer.generate(loaded.image, 0.0, cfg.synthesis_seeds[:1], cfg.num_inference_steps, cfg.guidance_scale)[0]
+        self_recon = self_reconstruction_fidelity(
+            to_float01(loaded.image.convert("L").resize(reconstruction.size)), to_float01(reconstruction)
+        )
+        conditioning = reconstruction if cfg.bridge_to_drr_domain else loaded.image
         samples = synthesizer.generate(
-            loaded.image, plan.azimuth_deg, cfg.synthesis_seeds, cfg.num_inference_steps, cfg.guidance_scale
+            conditioning, plan.azimuth_deg, cfg.synthesis_seeds, cfg.num_inference_steps, cfg.guidance_scale
         )
     except Exception as error:
         warnings.append(f"View synthesis failed: {error}")
@@ -311,13 +317,19 @@ def run_pipeline(
     samples01 = [to_float01(s) for s in samples]
     qc = evaluate_synthetic_view(
         input01, samples01, cfg.qc_min_row_profile_corr, cfg.qc_max_mean_sample_std, cfg.qc_min_dynamic_range,
-        gating_checks=tuple(cfg.qc_gating_checks),
+        gating_checks=tuple(cfg.qc_gating_checks), self_reconstruction=self_recon,
+        min_self_reconstruction_edge_ncc=cfg.qc_min_self_reconstruction_edge_ncc,
     )
+    if not qc["checks"]["self_reconstruction"]["passed"]:
+        warnings.append(
+            "Input appears to be outside the view-synthesis model's domain (it could not re-render the input at pose 0); "
+            "the generated view is likely unreliable."
+        )
     if qc["advisory_failures"]:
         warnings.append(f"Advisory (non-gating, uncalibrated) QC checks failed: {', '.join(qc['advisory_failures'])}.")
     synth_dir = run_dir / "synthetic"
     synth_meta = {
-        **synth_description, "route": plan.route, "azimuth_deg": plan.azimuth_deg,
+        **synth_description, "route": plan.route, "bridged_to_drr_domain": cfg.bridge_to_drr_domain, "azimuth_deg": plan.azimuth_deg,
         "seeds": cfg.synthesis_seeds, "steps": cfg.num_inference_steps, "guidance": cfg.guidance_scale,
         "conditioning_input_sha256": result["original_image"]["rendered_sha256"],
     }
