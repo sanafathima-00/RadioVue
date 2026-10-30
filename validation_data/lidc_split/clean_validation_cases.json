@@ -1,0 +1,25 @@
+{
+  "source": {
+    "svdrr_eval": "Parallax/eval_patients.json (SV-DRR last-16 validation patients)",
+    "x2ct_split": "github.com/kylekma/X2CT 3DGAN/data/{train,test}.txt (assumed DVG split; DVG uses X2CT-GAN preprocessing)"
+  },
+  "held_out_by_both": [],
+  "svdrr_eval_but_x2ct_train": [
+    "LIDC-IDRI-0030",
+    "LIDC-IDRI-0089",
+    "LIDC-IDRI-0163",
+    "LIDC-IDRI-0177",
+    "LIDC-IDRI-0251",
+    "LIDC-IDRI-0356",
+    "LIDC-IDRI-0376",
+    "LIDC-IDRI-0609",
+    "LIDC-IDRI-0671",
+    "LIDC-IDRI-0725",
+    "LIDC-IDRI-0755",
+    "LIDC-IDRI-0813",
+    "LIDC-IDRI-0830",
+    "LIDC-IDRI-0907",
+    "LIDC-IDRI-0952",
+    "LIDC-IDRI-0978"
+  ]
+}

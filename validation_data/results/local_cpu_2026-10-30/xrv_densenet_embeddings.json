@@ -1,0 +1,42 @@
+{
+ "model": "torchxrayvision densenet121-res224-all (globally pooled features, CPU)",
+ "dim": 1024,
+ "cosine": {
+  "pa": {
+   "pa": 1.0,
+   "lateral": 0.7994135022163391,
+   "pa_mirrored": 0.9709151983261108,
+   "pa_upside_down": 0.8454536199569702,
+   "uniform_noise": 0.27357375621795654
+  },
+  "lateral": {
+   "pa": 0.7994135022163391,
+   "lateral": 1.0000001192092896,
+   "pa_mirrored": 0.8740115165710449,
+   "pa_upside_down": 0.8518438339233398,
+   "uniform_noise": 0.2375791072845459
+  },
+  "pa_mirrored": {
+   "pa": 0.9709151983261108,
+   "lateral": 0.8740115165710449,
+   "pa_mirrored": 1.0,
+   "pa_upside_down": 0.9083763360977173,
+   "uniform_noise": 0.2697374224662781
+  },
+  "pa_upside_down": {
+   "pa": 0.8454536199569702,
+   "lateral": 0.8518438339233398,
+   "pa_mirrored": 0.9083763360977173,
+   "pa_upside_down": 1.0,
+   "uniform_noise": 0.3063028156757355
+  },
+  "uniform_noise": {
+   "pa": 0.27357375621795654,
+   "lateral": 0.2375791072845459,
+   "pa_mirrored": 0.2697374224662781,
+   "pa_upside_down": 0.3063028156757355,
+   "uniform_noise": 1.0
+  }
+ },
+ "note": "Executed 2026-10-30 on CPU. Single public subject; descriptive only."
+}

@@ -1,0 +1,28 @@
+{
+ "note": "Real same-subject CC0 PA vs lateral; independently acquired, different FOV. Executed 2026-10-30 on CPU.",
+ "pa_vs_lateral_fixed_scale": {
+  "row_profile_corr": 0.45138597579691164,
+  "row_shift_px": 19.0,
+  "row_scale": 1.0
+ },
+ "pa_vs_lateral_scale_search_0.6_1.6_shift15pct": {
+  "row_profile_corr": 0.654998572147091,
+  "row_shift_px": 60.0,
+  "row_scale": 0.6
+ },
+ "control_pa_vs_vertically_flipped_lateral_same_search": {
+  "row_profile_corr": 0.8680944064454139,
+  "row_shift_px": -63.0,
+  "row_scale": 1.6
+ },
+ "control_pa_vs_uniform_noise_same_search": {
+  "row_profile_corr": 0.141694350290485,
+  "row_shift_px": -11.0,
+  "row_scale": 1.14
+ },
+ "control_pa_vs_horizontal_gradient_same_search": {
+  "row_profile_corr": -1.0,
+  "row_shift_px": 0.0,
+  "row_scale": 1.0
+ }
+}

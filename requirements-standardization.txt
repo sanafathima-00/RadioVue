@@ -1,0 +1,4 @@
+# Standalone SV-DRR X-ray standardization MVP
+pydicom>=3.0,<4
+Pillow>=10
+numpy>=1.24

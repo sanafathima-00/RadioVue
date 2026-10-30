@@ -19,6 +19,7 @@ Parallax/outputs/
 Parallax/logs/
 Parallax/lightning_logs/
 Parallax/wandb/
+Volumea/models/
 
 # Local medical-image working data and generated previews
 Parallax/X-ray data/
@@ -36,4 +37,17 @@ env/
 /research/
 /scripts/
 /AGENTS.md
-/README.md
+
+# Clinical data and PHI-bearing local artefacts (never commit)
+/Data/
+/.scratch_ct_check/
+/DVG_Diffusion_Colab_Inference.ipynb
+/Volumea.tar
+
+# Single-X-ray pipeline: generated outputs, bundles, public test images (downloaded + checksummed by notebooks)
+/dist/
+/outputs/
+validation_data/public_cc0/*.png
+validation_data/results/**/*.npz
+validation_data/results/**/*.png
+validation_data/results/**/run_*/

@@ -1,0 +1,223 @@
+{
+  "environment": {
+    "python": "3.10.9",
+    "torch": "2.14.1+cpu",
+    "torchxrayvision": "1.5.7",
+    "device": "cpu (Intel i7-8650U)"
+  },
+  "pa_cc0_2010": {
+    "size": [
+      2412,
+      1956
+    ],
+    "classifier_probs": {
+      "Frontal": 0.9989868998527527,
+      "Lateral": 0.0010131322778761387
+    },
+    "classifier_seconds": 0.21,
+    "fused_view": "FRONTAL_UNSPECIFIED",
+    "family": "FRONTAL",
+    "confidence": "low",
+    "warnings": [
+      "PA vs AP is not verifiable from pixels in this pipeline; supply DICOM or a declared view. Treating as frontal with unspecified projection."
+    ],
+    "segmentation_seconds": 29.1,
+    "segmentation": {
+      "model": "torchxrayvision chestx_det.PSPNet (ChestX-Det, 14 structures)",
+      "measurements_px": {
+        "Left Clavicle": {
+          "present": true,
+          "area_px": 107580,
+          "bbox_xyxy_px": [
+            1268,
+            208,
+            2311,
+            528
+          ],
+          "vertical_extent_px": 320,
+          "horizontal_extent_px": 1043
+        },
+        "Right Clavicle": {
+          "present": true,
+          "area_px": 91647,
+          "bbox_xyxy_px": [
+            0,
+            228,
+            1082,
+            521
+          ],
+          "vertical_extent_px": 293,
+          "horizontal_extent_px": 1082
+        },
+        "Left Scapula": {
+          "present": true,
+          "area_px": 308790,
+          "bbox_xyxy_px": [
+            1895,
+            236,
+            2412,
+            1282
+          ],
+          "vertical_extent_px": 1046,
+          "horizontal_extent_px": 517
+        },
+        "Right Scapula": {
+          "present": true,
+          "area_px": 299741,
+          "bbox_xyxy_px": [
+            0,
+            273,
+            462,
+            1349
+          ],
+          "vertical_extent_px": 1076,
+          "horizontal_extent_px": 462
+        },
+        "Left Lung": {
+          "present": true,
+          "area_px": 1116393,
+          "bbox_xyxy_px": [
+            1264,
+            143,
+            2193,
+            1847
+          ],
+          "vertical_extent_px": 1704,
+          "horizontal_extent_px": 929
+        },
+        "Right Lung": {
+          "present": true,
+          "area_px": 1151000,
+          "bbox_xyxy_px": [
+            164,
+            164,
+            1181,
+            1876
+          ],
+          "vertical_extent_px": 1712,
+          "horizontal_extent_px": 1017
+        },
+        "Left Hilus Pulmonis": {
+          "present": true,
+          "area_px": 90718,
+          "bbox_xyxy_px": [
+            1298,
+            848,
+            1610,
+            1280
+          ],
+          "vertical_extent_px": 432,
+          "horizontal_extent_px": 312
+        },
+        "Right Hilus Pulmonis": {
+          "present": true,
+          "area_px": 96964,
+          "bbox_xyxy_px": [
+            773,
+            847,
+            1120,
+            1340
+          ],
+          "vertical_extent_px": 493,
+          "horizontal_extent_px": 347
+        },
+        "Heart": {
+          "present": true,
+          "area_px": 368142,
+          "bbox_xyxy_px": [
+            929,
+            1112,
+            1682,
+            1725
+          ],
+          "vertical_extent_px": 613,
+          "horizontal_extent_px": 753
+        },
+        "Aorta": {
+          "present": true,
+          "area_px": 100456,
+          "bbox_xyxy_px": [
+            1078,
+            641,
+            1424,
+            998
+          ],
+          "vertical_extent_px": 357,
+          "horizontal_extent_px": 346
+        },
+        "Facies Diaphragmatica": {
+          "present": true,
+          "area_px": 452538,
+          "bbox_xyxy_px": [
+            198,
+            1628,
+            2178,
+            1947
+          ],
+          "vertical_extent_px": 319,
+          "horizontal_extent_px": 1980
+        },
+        "Mediastinum": {
+          "present": true,
+          "area_px": 314723,
+          "bbox_xyxy_px": [
+            1024,
+            88,
+            1482,
+            1071
+          ],
+          "vertical_extent_px": 983,
+          "horizontal_extent_px": 458
+        },
+        "Weasand": {
+          "present": true,
+          "area_px": 178118,
+          "bbox_xyxy_px": [
+            999,
+            28,
+            1452,
+            1122
+          ],
+          "vertical_extent_px": 1094,
+          "horizontal_extent_px": 453
+        },
+        "Spine": {
+          "present": true,
+          "area_px": 512297,
+          "bbox_xyxy_px": [
+            1030,
+            0,
+            1366,
+            1900
+          ],
+          "vertical_extent_px": 1900,
+          "horizontal_extent_px": 336
+        },
+        "derived": {
+          "cardiothoracic_width_ratio_px": 0.37111877772301627,
+          "note": "Mask-width ratio on the given projection; AP projection magnifies the heart. Not a clinical CTR.",
+          "lung_apex_row_px": 143,
+          "lung_base_row_px": 1876
+        }
+      },
+      "note": "Pixel-space masks from a dedicated segmentation model; not validated on this site's data.",
+      "masks_path": "validation_data\\results\\local_cpu_2026-10-30\\pa_cc0_2010_segmentation\\segmentation_masks.npz",
+      "overlay_path": "validation_data\\results\\local_cpu_2026-10-30\\pa_cc0_2010_segmentation\\segmentation_overlay.png"
+    }
+  },
+  "lateral_cc0_2010": {
+    "size": [
+      1956,
+      2412
+    ],
+    "classifier_probs": {
+      "Frontal": 9.780722029972821e-05,
+      "Lateral": 0.9999021291732788
+    },
+    "classifier_seconds": 0.22,
+    "fused_view": "LATERAL",
+    "family": "LATERAL",
+    "confidence": "medium",
+    "warnings": []
+  }
+}
