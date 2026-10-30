@@ -128,7 +128,7 @@ What it does **not** solve, recorded explicitly:
 
 ## 8. Explicit limitations
 
-- No generated view in this task has been produced or inspected yet (GPU blocked; see EXPERIMENT_RESULTS.md).
+- Generated laterals were produced and inspected on a Colab T4 (EXPERIMENT_RESULTS.md G1). Patient specificity was **not** demonstrated (top-1 at chance, n = 3), and one subject showed hallucinated structures.
 - The pretrained generator has never been evaluated on real radiographs against a real lateral.
 - QC thresholds are provisional. Row-profile consistency is advisory.
 - The lateral azimuth sign, the generator output orientation, and the DVG slot transforms are **uncalibrated** until notebook 03 runs.

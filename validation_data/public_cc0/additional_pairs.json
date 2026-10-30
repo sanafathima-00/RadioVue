@@ -1,0 +1,46 @@
+{
+ "normal_pa": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Normal_posteroanterior_%28PA%29_chest_radiograph_%28X-ray%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "license": "CC0",
+  "artist": "Mikael H\u00e4ggstr\u00f6m",
+  "size": [
+   1929,
+   2207
+  ],
+  "sha256": "4cbbcf805291db949e4ff085ca3c7258b2823de21b2857ae684e6c91ff9a38a4",
+  "desc": "Posteroanterior chest radiograph (\"X-ray\") taken of a 21 year old woman who presented with pain on the left side of her thorax after colliding with another player during a soccer game. It shows a norm"
+ },
+ "normal_lateral": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Normal_lateral_chest_radiograph_%28X-ray%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "license": "CC0",
+  "artist": "Mikael H\u00e4ggstr\u00f6m",
+  "size": [
+   1769,
+   2453
+  ],
+  "sha256": "d22911286846412a02aa484ffb8140e46cd3f5a2aab4687b63645075fa4e793b",
+  "desc": "Lateral chest radiograph (\"X-ray\") taken of a 21 year old woman who presented with pain on the left side of her thorax after colliding with another player during a soccer game. It shows a normal chest"
+ },
+ "flu_pa": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/da/Chest_radiograph_in_influensa_and_H_influenzae%2C_posteroanterior.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "license": "CC0",
+  "artist": "Mikael H\u00e4ggstr\u00f6m, M.D. Author info - Reusing images- Conflic",
+  "size": [
+   1163,
+   1010
+  ],
+  "sha256": "8925f49b4c6aeee969d113813e5c0e3f62a2184254dd2d76acdddd861bfc2d2b",
+  "desc": "Chest radiograph of an 88 year old man, about one week after onset of fever, fatigue and mild coughing. Lab tests detected both Influenza A virus and Haemophilus influenzae. It shows multifocal, patch"
+ },
+ "flu_lateral": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Chest_radiograph_in_influensa_and_H_influenzae%2C_lateral.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "license": "CC0",
+  "artist": "Mikael H\u00e4ggstr\u00f6m, M.D. Author info - Reusing images- Conflic",
+  "size": [
+   1001,
+   1127
+  ],
+  "sha256": "081f27eb8565a8c23dcee88ed9f3daa4592051a90ba013e7a24fd8f567645264",
+  "desc": "Chest radiograph of an 88 year old man, about one week after onset of fever, fatigue and mild coughing. Lab tests detected both Influenza A virus and Haemophilus influenzae."
+ }
+}

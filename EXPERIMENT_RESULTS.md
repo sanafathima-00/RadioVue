@@ -1,6 +1,39 @@
 # Experiment results: single-X-ray pipeline (2026-10-30)
 
-Every entry states whether it was **EXECUTED**, a **UNIT TEST** (simulated inputs), or **NOT EXECUTED** (with the blocker). No GPU model output exists from this task.
+Every entry states whether it was **EXECUTED**, a **UNIT TEST** (simulated inputs), or **NOT EXECUTED** (with the blocker).
+
+## Executed on GPU (Colab T4, driven by Claude; raw numbers in `validation_data/results/colab_t4_2026-10-30/`)
+
+Data: three CC0 subjects with **real same-patient PA + lateral** radiographs (Wikimedia Commons). No CT exists for them, so results compare against the real lateral, or against the CT reconstructed from the real lateral. They do **not** compare against a ground-truth CT.
+
+### G1. Parallax PA → lateral: runs; geometry correct; patient specificity NOT demonstrated
+
+- **Runs** on the T4: DiT-fb-512, 30 steps, **6.3 s/image**, peak VRAM 2.7 GB. It needed a shim fix: diffusers resolves `ModelMixin` from the `svdrr_transformer_2d` module namespace.
+- **Geometry:** +90° and −90° give mirror-image laterals, as expected. Outputs are not copies of the input (NCC with the input PA ≤ 0.14). Seed-to-seed variation is small (mean pixel std 0.02–0.04).
+- **Appearance:** DRR-style laterals with a thorax shape consistent with the PA. **Subject B (normal 21-year-old) shows hallucinated bright irregular structures in the mid-chest that are absent from her real lateral.**
+- **Patient specificity:** in the 3×3 comparison of generated vs real laterals (flip/scale/shift-searched NCC), **top-1 identification = 1/3 = chance** at both azimuths. Every generated lateral matched subject A's real lateral best, and generated laterals of different patients resemble each other (NCC 0.62–0.83). n = 3, and the real laterals differ strongly in field of view and processing, so this test is weak. It provides **no evidence** of patient-specific anatomy.
+
+### G2. Parallax lateral → frontal: does not work (as predicted from its training)
+
+The outputs are not frontal-like. Left-right symmetry is 0.12–0.50, vs 0.86–0.92 for real PAs of subjects A and B. They stay correlated with the input lateral (NCC up to 0.57), and match the correct patient's PA no better than other patients' PAs (NCC 0.31–0.44). **Lateral input therefore remains unsupported.**
+
+### G3. Volumea (DVG-Diffusion) with correct two-view input: runs; orientation-critical
+
+- **Runs** on the T4: checkpoints from the public HF repo `xing0916/DVG-Diffusion`, XraySyn CUDA projector compiled on Python 3.13, **27.5 s/volume**, peak VRAM 9.1 GB. It needed a runtime `torch.load(weights_only=False)` patch for the official checkpoints (PyTorch ≥ 2.6), and a scikit-video stub. **Volumea source is unchanged.**
+- **Subject A**, slot 0 = real PA. The reference CT came from the real lateral and is visually a plausible chest CT: lungs, heart, spine and mediastinum.
+
+| Slot 1 | NCC vs reference CT | 3D SSIM | MAE |
+|---|---:|---:|---:|
+| Parallax lateral **−90°** | **0.55** | 0.35 | 0.117 |
+| Parallax lateral +90° | 0.25 | 0.18 | 0.179 |
+| Real lateral, **mirrored** | 0.20 | 0.20 | 0.181 |
+
+- DVG is highly sensitive to lateral orientation, so the default azimuth is now **−90°** (`PipelineConfig.lateral_azimuth_deg`). With it, the CT from a generated lateral moderately agrees with the CT from the real lateral, and also looks like a plausible thorax.
+- **Accuracy against a ground-truth CT is unmeasured.** That needs the paired dataset.
+
+### G4. MedGemma: NOT EXECUTED
+
+`HF_TOKEN` did not yet exist in Colab Secrets (`SecretNotFoundError`). MedGemma is therefore optional in the app.
 
 ## Executed (local CPU, Intel i7-8650U, Python 3.10.9, torch 2.14.1+cpu, torchxrayvision 1.5.7)
 
@@ -73,11 +106,11 @@ A real bug was caught by these tests and fixed: JSON extraction picked the inner
 
 | Experiment | Notebook | Blocker |
 |---|---|---|
-| MedGemma 1.5 4B inference (example JSON, VRAM, timing, reproducibility) | 01 | No authenticated Colab session for the agent. Model gated (HAI-DEF acceptance + `HF_TOKEN`) |
+| MedGemma 1.5 4B inference (example JSON, VRAM, timing, reproducibility) | 01 | `HF_TOKEN` secret not yet created (HAI-DEF acceptance needed) |
 | MedSigLIP embeddings / zero-shot | 02 | Same |
-| Parallax lateral synthesis | 03, 04 | No GPU session |
-| Geometry calibration (lateral sign, DVG orientations, field of view) | 03 | No GPU session. Needs authorised CTs |
-| Tests A / B / C (CT metrics, PA vs AP sensitivity, patient specificity) | 03 | No GPU session. Needs authorised non-LIDC CTs |
-| End-to-end on the CC0 PA, then on your X-ray | 04 | No GPU session. **Your X-ray: intentionally not used** |
+| Geometry calibration and Tests A / B / C against a **ground-truth CT** | 03 | Needs your paired dataset (you declined the public TCIA download) |
+| AP → lateral with real AP inputs | 03 / app | No real AP radiographs available yet |
+| App (`05_RadioVue_App.ipynb`) end to end in Colab | 05 | Needs the branch pushed so Colab can clone `radiovue_pipeline` |
+| **Your X-ray** | 05 | Intentionally not used |
 
 The prior Colab results that this task relies on (DVG view-order ablation, DVG/Parallax runs on a T4) are documented in `PROJECT_AUDIT.md`. They were not re-executed.

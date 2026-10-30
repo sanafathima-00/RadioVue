@@ -44,21 +44,25 @@ class Components:
     synthesizer: Any = None  # .generate(PIL, azimuth, seeds, steps, guidance) -> [PIL]; .describe()
     reconstructor: Any = None  # .reconstruct(pair, seed) -> ndarray
     load_errors: dict[str, str] = field(default_factory=dict)
+    _lazy: dict[str, Lazy] = field(default_factory=dict, repr=False)
 
     def resolve(self, attr: str) -> Any:
         """Return the component, constructing a ``Lazy`` one on first use and recording failures."""
         value = getattr(self, attr)
         if isinstance(value, Lazy):
+            lazy = self._lazy[attr] = value
             try:
-                value = value.factory()
+                value = lazy.factory()
+                self.load_errors.pop(lazy.name, None)
             except Exception as error:  # recorded and surfaced as a warning, never silently ignored
-                self.load_errors[value.name] = f"{type(error).__name__}: {error}"
+                self.load_errors[lazy.name] = f"{type(error).__name__}: {error}"
                 value = None
             setattr(self, attr, value)
         return value
 
     def release(self, attr: str) -> None:
-        setattr(self, attr, None)
+        """Free a GPU model; a lazily built one is rebuilt on its next use."""
+        setattr(self, attr, self._lazy.get(attr))
         try:
             import gc
 

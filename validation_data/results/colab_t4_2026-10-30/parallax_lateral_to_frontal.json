@@ -1,0 +1,7 @@
+{"symmetry_reference": {"real_pa": {"subjA": 0.92, "subjB": 0.864, "subjC": 0.457}, "real_lateral": {"subjA": 0.127, "subjB": 0.599, "subjC": 0.506}},
+ "90": {"gen_frontal_vs_real_pa[gen_i][pa_j]": [[0.389, 0.384, 0.422], [0.364, 0.389, 0.336], [0.36, 0.374, 0.312]], "top1": 0.333,
+        "symmetry_of_generated": {"subjA": 0.498, "subjB": 0.214, "subjC": 0.336},
+        "copy_check_ncc_vs_input_lateral": {"subjA": 0.568, "subjB": 0.511, "subjC": 0.189}},
+ "-90": {"gen_frontal_vs_real_pa[gen_i][pa_j]": [[0.368, 0.356, 0.383], [0.363, 0.379, 0.329], [0.322, 0.338, 0.437]], "top1": 0.667,
+         "symmetry_of_generated": {"subjA": 0.264, "subjB": 0.12, "subjC": 0.495},
+         "copy_check_ncc_vs_input_lateral": {"subjA": 0.513, "subjB": 0.31, "subjC": -0.044}}}

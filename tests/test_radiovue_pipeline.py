@@ -297,6 +297,7 @@ def test_synthesis_plan_policy():
     assert not lat.allowed and lat.target_view == "FRONTAL_SYNTHETIC_DRR_LIKE"
     assert not plan_synthesis("UNKNOWN", cfg).allowed
     assert list(parallax_pose(90)) == [0.0, -90.0, 0.0]
+    assert cfg.lateral_azimuth_deg == -90.0  # selected on GPU evidence, see config.py
 
 
 # ---------------------------------------------------------------- provenance / adapter
@@ -351,7 +352,7 @@ def test_run_pipeline_pa_completes_with_provenance(tmp_path, frontal_lateral_pai
     assert out["input_view"] == "PA" and out["generated_view"]["origin"] == "SYNTHETIC"
     assert read_origin(out["generated_view"]["path"]) == "SYNTHETIC"
     assert recon.calls[0].frontal_record.origin == "ORIGINAL" and recon.calls[0].lateral_record.origin == "SYNTHETIC"
-    assert any("UNCALIBRATED" in w for w in out["warnings"])
+    assert any("not yet validated" in w for w in out["warnings"])
     assert (tmp_path / "input.png").read_bytes() == open(out["original_image"]["preserved_file"], "rb").read()
 
 
@@ -410,3 +411,34 @@ def test_run_pipeline_without_gpu_components_reports_blockers(tmp_path, frontal_
     out = run_pipeline(src, _cfg(tmp_path), Components(load_errors={"parallax": "RuntimeError: no CUDA"}), declared_view="PA")
     assert out["status"] == "stopped_synthesizer_unavailable" and out["generated_view"] is None
     assert any("parallax" in w for w in out["warnings"])
+
+
+# ---------------------------------------------------------------- app helpers (gradio not required)
+
+def test_app_helpers(tmp_path, frontal_lateral_pair):
+    from radiovue_pipeline.app import ct_slice, status_markdown, zip_run
+
+    frontal, lateral = frontal_lateral_pair
+    src = save_png(frontal, tmp_path / "input.png")
+    comps = Components(view_classifier=FakeClassifier(), synthesizer=FakeSynthesizer(lateral, 0.01), reconstructor=FakeReconstructor())
+    out = run_pipeline(src, _cfg(tmp_path), comps, declared_view="PA")
+    text = status_markdown(out)
+    assert "`completed`" in text and "not HU" in text and "Warnings" in text
+    image = ct_slice(out["ct_reconstruction"]["npy"], 1, 500)  # out-of-range index is clamped
+    assert image.size == (384, 384) and ct_slice(None, 0, 0) is None
+    archive = zip_run(out["run_dir"])
+    assert archive.endswith(".zip") and (tmp_path / "runs").exists()
+
+
+def test_released_lazy_components_reload_on_next_run(tmp_path, frontal_lateral_pair):
+    from radiovue_pipeline.pipeline import Lazy
+
+    frontal, lateral = frontal_lateral_pair
+    src = save_png(frontal, tmp_path / "input.png")
+    builds = []
+    factory = lambda: builds.append(1) or FakeSynthesizer(lateral, 0.01)
+    comps = Components(view_classifier=FakeClassifier(), synthesizer=Lazy("parallax", factory), reconstructor=FakeReconstructor())
+    cfg = _cfg(tmp_path, free_gpu_between_stages=True)
+    first = run_pipeline(src, cfg, comps, declared_view="PA")
+    second = run_pipeline(src, cfg, comps, declared_view="PA")
+    assert first["status"] == second["status"] == "completed" and len(builds) == 2

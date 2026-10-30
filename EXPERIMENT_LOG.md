@@ -15,4 +15,7 @@ Append-only. Times are UTC dates. "EXEC" means actually run, "TEST" means a unit
 | 2026-10-30 | L8 | DenseNet embedding probe | EXEC | PA~mirror cosine 0.971 | results/.../xrv_densenet_embeddings.json |
 | 2026-10-30 | L9 | `run_pipeline` dry run (CPU) | EXEC | Stopped safely at the synthesizer, with exact blockers recorded | results/.../run_pipeline_dryrun |
 | 2026-10-30 | L10 | Unit test suite | TEST | 48/48 pass. One JSON-parsing bug found and fixed | tests/ |
-| 2026-10-30 | L11 | MedGemma / MedSigLIP / Parallax / DVG on GPU | NOT RUN | No Colab session. Models gated | EXPERIMENT_RESULTS.md |
+| 2026-10-30 | L11 | Parallax PA→lateral on Colab T4, 3 CC0 subjects | EXEC | Runs, 6.3 s/img. Patient specificity at chance. Hallucination in subject B | results/colab_t4_2026-10-30 |
+| 2026-10-30 | L12 | Parallax lateral→frontal | EXEC | Not frontal-like. Lateral input stays unsupported | same |
+| 2026-10-30 | L13 | Volumea/DVG, real PA + {real, ±90 generated, mirrored real} lateral | EXEC | Runs, 27.5 s/vol. −90° agrees with the real-lateral CT (NCC 0.55). Orientation-critical | same |
+| 2026-10-30 | L14 | MedGemma | NOT RUN | `HF_TOKEN` secret absent | — |

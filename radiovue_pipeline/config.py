@@ -48,9 +48,12 @@ class PipelineConfig:
     num_inference_steps: int = 30
     guidance_scale: float = 3.0
     synthesis_seeds: list[int] = field(default_factory=lambda: [0, 1, 2, 3])
-    # UNCALIBRATED: which azimuth sign renders the lateral that Volumea's pose-0
-    # view expects.  Calibrate with notebook 03 and record the result here.
-    lateral_azimuth_deg: float = 90.0
+    # Azimuth sign of the Parallax lateral fed to Volumea slot 1.  -90 was selected
+    # on a Colab T4 (2026-10-30): with a real PA in slot 0, the CT from the -90
+    # lateral agreed with the CT from the subject's real lateral (NCC 0.55) far better
+    # than +90 (0.25), and a mirrored real lateral gave 0.20.  This is single-subject
+    # evidence without CT ground truth; paired CT validation is still required.
+    lateral_azimuth_deg: float = -90.0
     lateral_azimuth_calibrated: bool = False
     # UNCALIBRATED: dihedral transform taking Parallax's raw output into display
     # orientation (head up, anterior on the viewer's left).  Fitted by notebook 03.

@@ -18,6 +18,8 @@ from __future__ import annotations
 import ctypes
 import json
 import sys
+import types
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -138,6 +140,44 @@ def build_input_pair(
 # DVG model (GPU; lazy imports; mirrors the working Volumea Colab cells)
 # ---------------------------------------------------------------------------
 
+@contextmanager
+def _trusted_checkpoint_loading():
+    """Load the official DVG checkpoints under PyTorch >= 2.6.
+
+    They pickle omegaconf objects, which ``weights_only=True`` (the new default,
+    also passed by Lightning) rejects.  The patch is active only while the model is
+    built, and only for these published files.
+    """
+    import torch
+
+    original = torch.load
+
+    def load(*args, **kwargs):
+        if kwargs.get("weights_only") in (None, True):
+            kwargs["weights_only"] = False
+        return original(*args, **kwargs)
+
+    torch.load = load
+    try:
+        yield
+    finally:
+        torch.load = original
+
+
+def _stub_unused_video_dependency() -> None:
+    """``vq_gan_3d/utils.py`` imports scikit-video for video I/O that inference never uses.
+
+    scikit-video fails to import on NumPy 2, so it is stubbed in ``sys.modules``
+    instead of editing Volumea.
+    """
+    try:
+        import skvideo.io  # noqa: F401
+    except Exception:
+        module = types.ModuleType("skvideo")
+        module.io = types.ModuleType("skvideo.io")
+        sys.modules["skvideo"], sys.modules["skvideo.io"] = module, module.io
+
+
 def _preload_torch_libs() -> None:
     import torch
 
@@ -161,21 +201,23 @@ class VolumeaReconstructor:
         if missing:
             raise FileNotFoundError(f"Missing DVG checkpoints in {self.checkpoint_dir}: {missing}")
         _preload_torch_libs()
+        _stub_unused_video_dependency()
         if str(self.root) not in sys.path:
             sys.path.insert(0, str(self.root))
         from ddpm import FineStage
         from ddpm.new_unet3d import Unet3D
 
         ck = {k: str(self.checkpoint_dir / v) for k, v in CHECKPOINTS.items()}
-        model = FineStage(
-            fit_model=Unet3D(dim=64, dim_mults=(1, 2, 4, 8), channels=8, out_dim=8).cuda(),
-            fine_model=Unet3D(dim=128, dim_mults=(1, 2, 4, 8), channels=24, out_dim=8).cuda(),
-            vqgan_ckpt=ck["ct_vqgan"],
-            vqgan_ckpt_bp=ck["view_vqgan_0_90"],
-            vqgan_ckpt_bp025=ck["view_vqgan_45"],
-            image_size=32, input_img_size=128, num_frames=32, channels=8,
-            timesteps=100, pose_timesteps=1, loss_type="l2",
-        ).cuda()
+        with _trusted_checkpoint_loading():
+            model = FineStage(
+                fit_model=Unet3D(dim=64, dim_mults=(1, 2, 4, 8), channels=8, out_dim=8).cuda(),
+                fine_model=Unet3D(dim=128, dim_mults=(1, 2, 4, 8), channels=24, out_dim=8).cuda(),
+                vqgan_ckpt=ck["ct_vqgan"],
+                vqgan_ckpt_bp=ck["view_vqgan_0_90"],
+                vqgan_ckpt_bp025=ck["view_vqgan_45"],
+                image_size=32, input_img_size=128, num_frames=32, channels=8,
+                timesteps=100, pose_timesteps=1, loss_type="l2",
+            ).cuda()
         state = torch.load(ck["dvg_diffusion"], map_location="cpu", weights_only=False)
         model.load_state_dict(state["ema"], strict=True)
         del state

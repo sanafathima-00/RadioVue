@@ -48,6 +48,7 @@ env/
 /dist/
 /outputs/
 validation_data/public_cc0/*.png
+validation_data/public_cc0/*.jpg
 validation_data/results/**/*.npz
 validation_data/results/**/*.png
 validation_data/results/**/run_*/

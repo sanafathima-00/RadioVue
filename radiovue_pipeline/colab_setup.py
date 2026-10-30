@@ -19,13 +19,14 @@ PARALLAX_PINS = [
     "diffusers==0.30.3", "transformers==4.46.2", "accelerate==1.1.1",
     "huggingface_hub==0.26.2", "safetensors==0.4.5", "kornia==0.7.1",
 ]
+# Minimal set for DVG *inference* (sample_from_xray); verified on Colab T4, Python 3.13, 2026-10-30.
 DVG_PACKAGES = [
-    "hydra-core>=1.3,<1.4", "omegaconf>=2.3,<2.4", "monai>=1.4,<1.5", "pytorch-lightning>=2.4,<2.6",
-    "einops>=0.8,<0.9", "einops-exts>=0.0.4", "rotary-embedding-torch>=0.8", "ema-pytorch>=0.7",
-    "SimpleITK>=2.3", "scikit-video>=1.1.11", "tensorboardX>=2.6", "nibabel>=5.2", "ninja>=1.11", "h5py",
-    "wandb",  # imported at module level by Volumea/ddpm/diffusion.py
+    "h5py", "wandb", "SimpleITK", "scikit-image", "einops", "einops-exts", "rotary-embedding-torch",
+    "tensorboardX", "pytorch-lightning", "scikit-video", "ninja",
 ]
-TOOL_PACKAGES = ["torchxrayvision>=1.3", "scikit-image", "pydicom>=3.0,<4", "lpips", "diffdrr==0.4.8", "ipywidgets"]
+TOOL_PACKAGES = ["torchxrayvision>=1.3", "scikit-image", "pydicom>=3.0,<4", "ipywidgets"]
+VALIDATION_PACKAGES = ["lpips", "diffdrr==0.4.8"]
+APP_PACKAGES = ["gradio>=5,<7"]
 MEDGEMMA_VENV_PACKAGES = ["transformers>=4.50", "accelerate>=1.1"]
 
 # Sizes and SHA-256 recorded in reports/voluma_baseline/BASELINE_REPORT.md.
@@ -59,14 +60,22 @@ def torchvision_imports_cleanly() -> bool:
     return subprocess.run([sys.executable, "-c", "import torchvision"], capture_output=True).returncode == 0
 
 
-def install_runtime(parallax: bool = True, dvg: bool = True, tools: bool = True) -> None:
+def install_runtime(parallax: bool = True, dvg: bool = True, tools: bool = True, validation: bool = False, app: bool = False) -> None:
     """Install into the main kernel environment.  Run before importing torch/numpy in the kernel."""
+    import importlib.metadata
+
+    # Hold NumPy at the runtime's version so packages already imported by the kernel keep working.
+    numpy_pin = f"numpy=={importlib.metadata.version('numpy')}"
     if parallax:
         pip(*PARALLAX_PINS)
     if dvg:
-        pip(*DVG_PACKAGES)
+        pip(numpy_pin, *DVG_PACKAGES)
     if tools:
-        pip(*TOOL_PACKAGES)
+        pip(numpy_pin, *TOOL_PACKAGES)
+    if validation:
+        pip(numpy_pin, *VALIDATION_PACKAGES)
+    if app:
+        pip(numpy_pin, *APP_PACKAGES)
     if not torchvision_imports_cleanly():
         # Observed in the Volumea Colab: a NumPy upgrade broke torchvision; this pin restored it.
         pip("numpy==2.2.6", extra=["--force-reinstall", "--no-cache-dir"])
@@ -119,16 +128,25 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def stage_dvg_checkpoints(drive_dir: str, local_dir: str = "/content/dvg_checkpoints", verify_hash: bool = False) -> str:
-    """Copy the five DVG checkpoints from Drive to local disk and verify them against the recorded fingerprints."""
-    src, dst = Path(drive_dir), Path(local_dir)
+def stage_dvg_checkpoints(drive_dir: str | None, local_dir: str = "/content/dvg_checkpoints", verify_hash: bool = False) -> str:
+    """Stage the five DVG checkpoints locally and verify them against the recorded fingerprints.
+
+    Copies from Drive when present, otherwise downloads the public, ungated
+    ``xing0916/DVG-Diffusion`` Hugging Face repository (same files, same sizes).
+    """
+    dst = Path(local_dir)
     dst.mkdir(parents=True, exist_ok=True)
+    src = Path(drive_dir) if drive_dir and all((Path(drive_dir) / n).is_file() for n in DVG_CHECKPOINTS) else None
+    if src is None:
+        from huggingface_hub import snapshot_download
+
+        snapshot_download("xing0916/DVG-Diffusion", local_dir=str(dst), allow_patterns=list(DVG_CHECKPOINTS))
+        src = dst
     for name, (size, digest) in DVG_CHECKPOINTS.items():
-        source = src / name
+        source, target = src / name, dst / name
         if not source.is_file():
-            raise FileNotFoundError(f"Missing DVG checkpoint on Drive: {source}")
-        target = dst / name
-        if not (target.is_file() and target.stat().st_size == size):
+            raise FileNotFoundError(f"Missing DVG checkpoint: {source}")
+        if source != target and not (target.is_file() and target.stat().st_size == size):
             shutil.copyfile(source, target)
         if target.stat().st_size != size:
             raise IOError(f"{name}: size {target.stat().st_size} != recorded {size}")
@@ -195,9 +213,15 @@ def ensure_parallax_shims(parallax_root: str) -> None:
             "from diffusers.configuration_utils import ConfigMixin\n"
             "from pipeline import CCProjection\n"
         ),
-        "svdrr_transformer_2d.py": "from transformer import SvdrrTransformer2DModel\n__all__ = ['SvdrrTransformer2DModel']\n",
+        # diffusers looks up ModelMixin in this module's namespace too (verified on a Colab T4, 2026-10-30).
+        "svdrr_transformer_2d.py": (
+            "from diffusers.models.modeling_utils import ModelMixin\n"
+            "from diffusers.configuration_utils import ConfigMixin\n"
+            "from transformer import SvdrrTransformer2DModel\n"
+        ),
     }
     for name, body in shims.items():
-        if not (root / name).exists():
-            (root / name).write_text(body)
-            print("Created Parallax import shim:", name)
+        path = root / name
+        if not path.exists() or "ModelMixin" not in path.read_text():
+            path.write_text(body)
+            print("Wrote Parallax import shim:", name)

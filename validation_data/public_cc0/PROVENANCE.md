@@ -10,3 +10,14 @@
 - No CT exists for this subject.
 - The images carry a laterality marker ("L") and technologist initials. They contain no patient identifiers.
 - The images are git-ignored by policy (`validation_data/public_cc0/*.png`). The notebooks download them and verify these checksums.
+
+## Additional same-patient PA + lateral pairs (added 2026-10-30)
+
+Both pairs are by Mikael Häggström and licensed CC0. Their Commons descriptions state the same patient and the same acquisition. Full URLs and SHA-256 hashes are in `additional_pairs.json`.
+
+| Subject | Files | Description (from Commons) |
+|---|---|---|
+| subjB | `normal_pa.jpg` (1929×2207), `normal_lateral.jpg` (1769×2453) | 21-year-old woman; normal chest |
+| subjC | `flu_pa.jpg` (1163×1010), `flu_lateral.jpg` (1001×1127) | 88-year-old man; influenza A + H. influenzae, multifocal opacities |
+
+The original pair (`pa_cc0_2010.png`, `lateral_cc0_2010.png`) is subjA. None of the three subjects has a CT.

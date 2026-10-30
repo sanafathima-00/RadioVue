@@ -1,0 +1,6 @@
+{"note": "slot0 = real PA (repo center-crop preprocessing). Reference R = real PA + real lateral. No CT ground truth exists.",
+ "R_real_lateral": {"mae_vs_R": 0.0, "ncc_vs_R": 1.0, "ssim3d_vs_R": 1.0, "frac_zero": 0.269, "mean": 0.242},
+ "G_plus90": {"mae_vs_R": 0.1785, "ncc_vs_R": 0.253, "ssim3d_vs_R": 0.18, "frac_zero": 0.397, "mean": 0.192},
+ "G_minus90": {"mae_vs_R": 0.1172, "ncc_vs_R": 0.55, "ssim3d_vs_R": 0.35, "frac_zero": 0.401, "mean": 0.203},
+ "Rflip_real_lateral_mirrored": {"mae_vs_R": 0.181, "ncc_vs_R": 0.195, "ssim3d_vs_R": 0.202, "frac_zero": 0.243, "mean": 0.251},
+ "runtime": {"seconds_per_volume": 27.5, "dvg_steps": 100, "peak_vram_gib": 9.07, "model_vram_gib": 1.05}}

@@ -43,10 +43,12 @@ REPO_URL = "https://github.com/sanafathima-00/RadioVue.git"  #@param {type:"stri
 REPO_BRANCH = "claude/single-xray-vlm-pipeline"  #@param {type:"string"}
 #@markdown If the pipeline code is not pushed yet, upload `radiovue_colab_bundle.zip` (see SETUP_GUIDE.md) to this Drive path:
 CODE_BUNDLE_ON_DRIVE = "RadioVue/code/radiovue_colab_bundle.zip"  #@param {type:"string"}
+#@markdown Mount Google Drive to persist outputs (Google asks you to approve access once). Models download from Hugging Face if not on Drive.
+USE_DRIVE = True  #@param {type:"boolean"}
 DRIVE_ROOT = "/content/drive/MyDrive/RadioVue"  #@param {type:"string"}
-DVG_CHECKPOINTS_ON_DRIVE = DRIVE_ROOT + "/Volumea/models/DVG-Diffusion"
-PARALLAX_MODEL_ON_DRIVE = DRIVE_ROOT + "/Parallax/models/DiT-fb-512"  # used if present, else downloaded from Hugging Face
-OUTPUT_ROOT = DRIVE_ROOT + "/outputs/single_xray_pipeline"
+DVG_CHECKPOINTS_ON_DRIVE = DRIVE_ROOT + "/Volumea/models/DVG-Diffusion" if USE_DRIVE else None
+PARALLAX_MODEL_ON_DRIVE = DRIVE_ROOT + "/Parallax/models/DiT-fb-512" if USE_DRIVE else None
+OUTPUT_ROOT = DRIVE_ROOT + "/outputs/single_xray_pipeline" if USE_DRIVE else "/content/radiovue_outputs"
 REPO_DIR = "/content/RadioVue"
 '''
 
@@ -59,12 +61,13 @@ smi = subprocess.run(["nvidia-smi"], capture_output=True, text=True)
 print(smi.stdout[:700] or smi.stderr)
 assert smi.returncode == 0, "No GPU. Runtime > Change runtime type > GPU (L4/A100 recommended, T4 minimum)."
 
-from google.colab import drive
-drive.mount("/content/drive")
+if USE_DRIVE:
+    from google.colab import drive
+    drive.mount("/content/drive")
 
 bundle = Path("/content/drive/MyDrive") / CODE_BUNDLE_ON_DRIVE
 if not Path(REPO_DIR, "radiovue_pipeline").exists():
-    if bundle.is_file():
+    if USE_DRIVE and bundle.is_file():
         Path(REPO_DIR).mkdir(parents=True, exist_ok=True)
         zipfile.ZipFile(bundle).extractall(REPO_DIR)
         print("Code from Drive bundle:", bundle)
@@ -84,9 +87,9 @@ GPU = cs.gpu_report()
 '''
 
 
-def install_cell(parallax: bool, dvg: bool, medgemma: str) -> str:
+def install_cell(parallax: bool, dvg: bool, medgemma: str, validation: bool = False, app: bool = False) -> str:
     lines = ["#@title 3. Install dependencies and stage models (first run ~10-15 min)",
-             f"cs.install_runtime(parallax={parallax}, dvg={dvg}, tools=True)"]
+             f"cs.install_runtime(parallax={parallax}, dvg={dvg}, tools=True, validation={validation}, app={app})"]
     if medgemma == "in_process":
         lines.append('cs.pip("transformers>=4.50", "accelerate>=1.1", extra=["-U"])  # this notebook does not load Parallax')
     if dvg:
@@ -281,7 +284,7 @@ the Parallax output orientation, and the DVG slot transforms. It writes them to
 all 16 SV-DRR validation patients are in the X2CT/DVG training split (`validation_data/lidc_split/`). The cleanest
 options are your own authorised local CTs, or a public non-LIDC chest CT collection (e.g. TCIA NSCLC-Radiomics).
 """),
-    code(CONFIG), code(BOOTSTRAP), code(install_cell(parallax=True, dvg=True, medgemma="none")),
+    code(CONFIG), code(BOOTSTRAP), code(install_cell(parallax=True, dvg=True, medgemma="none", validation=True)),
     code('''
 #@title 4. Cases (DICOM CT series folders on Drive)
 DATA_AUTHORISED = False  #@param {type:"boolean"}
@@ -517,6 +520,42 @@ else:
 '''),
 ]
 
+# ---------------------------------------------------------------- 05 app (single entry point)
+
+NB05 = [
+    md("# 05 · RadioVue: one X-ray in, synthetic view + CT out\n" + SAFETY + """
+**How to use:** `Runtime > Change runtime type > T4 GPU` (or better), then `Runtime > Run all`. After setup
+(~10 min on first run), the last cell prints a **public Gradio link**. Open it, upload one chest X-ray,
+optionally state its view, and click **Run**. No other cells need to be touched.
+
+What happens on Run: view identification → (optional) MedGemma anatomy → segmentation → Parallax complementary
+view (4 seeds + uncertainty) → QC gate → Volumea CT → display and download. A synthetic view that fails QC is
+never sent to Volumea, and lateral inputs stop before synthesis (no validated lateral→frontal generator exists).
+"""),
+    code(CONFIG), code(BOOTSTRAP), code(install_cell(parallax=True, dvg=True, medgemma="optional", app=True)),
+    code('''
+#@title 4. Start the app (prints a public link; keep this cell running)
+import json
+from radiovue_pipeline import PipelineConfig
+from radiovue_pipeline.pipeline import Components
+from radiovue_pipeline.app import build_app
+cfg = PipelineConfig(output_root=OUTPUT_ROOT, volumea_root=f"{REPO_DIR}/Volumea", parallax_root=f"{REPO_DIR}/Parallax",
+                     dvg_checkpoint_dir=DVG_CKPT_DIR, parallax_model_dir=PARALLAX_MODEL_DIR,
+                     run_medgemma=MEDGEMMA_PYTHON is not None,
+                     free_gpu_between_stages=MEDGEMMA_PYTHON is not None)  # T4: only release models when MedGemma also needs VRAM
+calib_path = Path(OUTPUT_ROOT) / "calibration" / "geometry_calibration.json"
+if calib_path.exists():
+    calib = json.loads(calib_path.read_text())
+    for key in ("lateral_azimuth_deg", "lateral_azimuth_calibrated", "parallax_output_transform",
+                "dvg_frontal_transform", "dvg_lateral_transform", "dvg_geometry_calibrated"):
+        setattr(cfg, key, calib[key])
+    print("Loaded geometry calibration from notebook 03")
+Path(OUTPUT_ROOT).mkdir(parents=True, exist_ok=True)
+comps = Components.load(cfg, medgemma_python=MEDGEMMA_PYTHON, repo_root=REPO_DIR)
+build_app(cfg, comps).queue().launch(share=True, debug=True)
+'''),
+]
+
 
 def main() -> None:
     outputs = {
@@ -524,6 +563,7 @@ def main() -> None:
         "02_MedSigLIP_Embedding_Experiment.ipynb": NB02,
         "03_Paired_DRR_Validation.ipynb": NB03,
         "04_RadioVue_End_to_End.ipynb": NB04,
+        "05_RadioVue_App.ipynb": NB05,
     }
     for name, cells in outputs.items():
         (HERE / name).write_text(json.dumps(notebook(cells), indent=1), encoding="utf-8")

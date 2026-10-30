@@ -45,7 +45,8 @@ def plan_synthesis(input_view: str, cfg) -> SynthesisPlan:
     az = float(cfg.lateral_azimuth_deg)
     if not cfg.lateral_azimuth_calibrated:
         reasons.append(
-            f"Lateral azimuth {az:+.0f} deg is UNCALIBRATED against Volumea's pose-0 laterality (run notebook 03 calibration)."
+            f"Lateral azimuth {az:+.0f} deg was selected on single-subject evidence without CT ground truth; "
+            "laterality is not yet validated against a ground-truth CT (run notebook 03 with paired data)."
         )
     if input_view == "PA":
         return SynthesisPlan("PA", "LATERAL", az, ROUTE_IN_DISTRIBUTION, True, True, reasons)
